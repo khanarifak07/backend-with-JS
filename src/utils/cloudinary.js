@@ -7,15 +7,15 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const UploadFilesOnCloudinary = function (localFilePath) {
+const UploadFileOnCloudinary = async function (localFilePath) {
   try {
     if (!localFilePath) return null;
     //upload file on cloudinary
-    const response = cloudinary.uploader.upload(localFilePath, {
+    const response = await cloudinary.uploader.upload(localFilePath, {
       resource_type: "auto",
     });
     console.log("File successfully uploaded on cloudinary", response.url); // here we can get url to store in the database
-    console.log(response);
+    console.log("Cloudinary full response", response);
     fs.unlinkSync(localFilePath); // to remove the loclally saved temo files after successful uploading of image
     return response;
   } catch (error) {
@@ -24,4 +24,4 @@ const UploadFilesOnCloudinary = function (localFilePath) {
   }
 };
 
-export { UploadFilesOnCloudinary };
+export { UploadFileOnCloudinary };
