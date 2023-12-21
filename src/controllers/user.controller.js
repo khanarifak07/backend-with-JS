@@ -194,7 +194,6 @@ const logoutUser = asyncHandler(async (req, res) => {
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
   //we can take the refresh access token from cookies
-  //check the token
   //verify the token via jwt so I can get the deccoded refresh token
   //now we can get the user if from decoded token
   //then we need to match the incoming token with the saved refresh token (we saved refres token in generateAccessAndRefreshToken function)
@@ -214,9 +213,6 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       process.env.REFRESH_TOKEN_SECRET
     );
 
-    if (!decodedToken) {
-      throw new ApiError(400, "Invalid Refresh Access Token");
-    }
     //we can get the user id from decoded token
     const user = await User.findById(decodedToken?._id);
 
@@ -256,4 +252,4 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   }
 });
 
-export { loginUser, logoutUser, registerUser, refreshAccessToken };
+export { loginUser, logoutUser, refreshAccessToken, registerUser };
