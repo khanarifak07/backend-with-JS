@@ -10,36 +10,27 @@ const userSchema = new Schema(
       unique: true,
       lowercase: true,
       trim: true,
-      index: true,
+      index: true, // For Optimize searching
     },
-
     email: {
       type: String,
+      required: true,
       unique: true,
       lowercase: true,
-      required: true,
       trim: true,
     },
-
     fullName: {
       type: String,
       required: true,
       trim: true,
-      trim: true,
+      index: true,
     },
-
     avatar: {
-      type: String, //cloudinary URL
+      type: String, //Cloudinary URL
       required: true,
     },
-
     coverImage: {
-      type: String,
-    },
-
-    password: {
-      type: String,
-      required: [true, "Password is required"],
+      type: String, //Cloudinary URL
     },
 
     watchHistory: [
@@ -48,7 +39,10 @@ const userSchema = new Schema(
         ref: "Video",
       },
     ],
-
+    password: {
+      type: String,
+      required: [true, "Password is required"],
+    },
     refreshToken: {
       type: String,
     },
