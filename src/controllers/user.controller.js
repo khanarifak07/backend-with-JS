@@ -6,12 +6,12 @@ import { asyncHandler } from "../utils/asynchandler.js";
 import { UploadFileOnCloudinary } from "../utils/cloudinary.js";
 
 const registerUser = asyncHandler(async (req, res) => {
-  //take the details from the user
+  //take the details from the user --> req.body
   //validate the details
-  //check for existing user
+  //check for user is already registered or not
   //check for image avatar
   //upload the image to cloudinary
-  //create user object entity in database
+  //create user object entity in database (.create)
   //remove password and reference token fields
   //check for created user
   //send the response
@@ -158,9 +158,8 @@ const loginUser = asyncHandler(async (req, res) => {
 
 const logoutUser = asyncHandler(async (req, res) => {
   //User.findById ?? here we dont have user id in login we have email, username and passoword
-  //but while logout we can give a form to user to fill then we can logout user
-  //Then user can  fill the form with any id but this is wrong
-  //So for this we need to write our auth middleware to verify weather user is there or not
+  //but while logout we can't give a form to user to fill then we can logout user this is wrong
+  //So for this we need to write our auth middleware to verify weather user is there or not from cookies
   //We need to veriyf JWT on the basis of access and refresh token weather he has right token or not that's how we can verify true user
   //If user has true login (correct token) then I can add new object in req e.g. (req.user)
   //After creating and injecting middleware now we have access to user id as req.user._id
