@@ -33,7 +33,8 @@ export const verifyJWT = asyncHandler(async (req, _, next) => {
     }
 
     //Here if we have user then we can add new object to req as (req.user) and assign that to the (user)
-    req.user = user;
+    req.user = user; //means we are injecting user to req.user
+
     next();
   } catch (error) {
     throw new ApiError(401, error?.message || "Invalid Access Token");

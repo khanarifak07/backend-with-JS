@@ -200,7 +200,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
   //1
   const incomingRefreshToken =
-    req.cookies.refreshToken || req.body.refreshToken;
+    req.cookies?.refreshToken || req.body.refreshToken;
   if (!incomingRefreshToken) {
     throw new ApiError(401, "Unauthorized Access");
   }
@@ -251,4 +251,130 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   }
 });
 
-export { loginUser, logoutUser, refreshAccessToken, registerUser };
+const changeCurrentPassword = asyncHandler(async (req, res) => {
+  const { oldPassword, newPassword } = req.body; //or we can also take confrimPassword if required
+  /*  if(!(newPassword === cofirmPassword)){
+    throw new ApiError(400,"Password Mismatch")
+  } */
+  //here we don't have user id so we are going to take user id from req.user (auth middleware)
+  const user = await User.findById(req.user?._id);
+  //comparing old password (given password) with currrent password
+  const isPasswordMatch = await user.isPasswordCorrect(oldPassword);
+  if (!isPasswordMatch) {
+    throw new ApiError(400, "Invalid Old Password");
+  }
+  //then we can set new password from user
+  user.password = newPassword;
+  //then we need to save to the database
+  await user.save({ validateBeforeSave: false }); // we don't need to validate all fileds
+  //return response
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Passoword changed successfully"));
+});
+
+const getCurrentUser = asyncHandler(async (req, res) => {
+  return res
+    .status(200)
+    .json(new ApiResponse(200, req.user, "Current User Fetched Successfully"));
+});
+
+const updateAccountDetails = asyncHandler(async (req, res) => {
+  const { fullName, email } = req.body;
+
+  if (!(fullName || email)) {
+    throw new ApiError(400, "fullname and email is required");
+  }
+  //get user from req.user
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        fullName, // this is es6 syntax or we can also write as fullName: fullName,
+        email,
+      },
+    },
+    {
+      new: true,
+    }
+  ).select("-password");
+  //need to remove the password field second approch need to hit another query
+  // User.findById(user._id).select("-password");
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, { user }, "Account Details Updated Successfully")
+    );
+});
+
+const updateUserAvatar = asyncHandler(async (req, res) => {
+  const avatarLocalPath = req.file?.path; //here we are file instead of files becasue here we updting one file only --> req.file (from multer)
+  if (!avatarLocalPath) {
+    throw new ApiError(400, "Avatar file is missing");
+  }
+
+  const avatar = await UploadFileOnCloudinary(avatarLocalPath);
+
+  if (!avatar.path) {
+    throw new ApiError(400, "Error while uploading avatar image");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        avatar: avatar.url,
+      },
+    },
+    {
+      new: true,
+    }
+  ).select("-password");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { user }, "Avatar Updated Successfully"));
+});
+
+const updateUserCoverImage = asyncHandler(async (req, res) => {
+  const coverImageLocalPath = req.file?.path; //req.file for single and req.files for multiple (from multer)
+
+  if (!coverImageLocalPath) {
+    throw new ApiError(400, "Cover Image is missing");
+  }
+
+  const coverImage = await UploadFileOnCloudinary(coverImageLocalPath);
+
+  if (!coverImage.url) {
+    throw new ApiError(400, "Error while uploading cover image");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        coverImage: coverImage.path,
+      },
+    },
+    { new: true }
+  ).select("-password");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { user }, "Cover Image updated successfully"));
+});
+
+
+
+export {
+  changeCurrentPassword,
+  getCurrentUser,
+  loginUser,
+  logoutUser,
+  refreshAccessToken,
+  registerUser,
+  updateAccountDetails,
+  updateUserAvatar,
+  updateUserCoverImage,
+};
