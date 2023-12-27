@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -309,7 +310,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
 });
 
 const updateUserAvatar = asyncHandler(async (req, res) => {
-  const avatarLocalPath = req.file?.path; //here we are file instead of files becasue here we updting one file only --> req.file (from multer)
+  const avatarLocalPath = req.file?.path; //req.file for single and req.files for multiple (from multer)
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar file is missing");
   }
@@ -365,11 +366,149 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, { user }, "Cover Image updated successfully"));
 });
 
+const getUserChannelProfile = asyncHandler(async (req, res) => {
+  //wheneve we need to go to the channel profile we usally go from the channel url e.g (www.youtube.com/chaiAurCode)
+  const { username } = req.params;
 
+  if (!username?.trim()) {
+    throw new ApiError(400, "Username is missing");
+  }
+
+  //  await User.find({username})
+  const channel = await User.aggregate([
+    {
+      $match: {
+        username: username?.toLowerCase(),
+      },
+    },
+    {
+      $lookup: {
+        from: "subscriptions", //Our model name is "Subscription" but in mongo DB it will become "subscriptions" (lowercase with plural)
+        localField: "_id",
+        foreignField: "channel", //here we select channel to find how many subscribers this channel has
+        as: "subscribers",
+      },
+    },
+    {
+      $lookup: {
+        from: "subscriptions", //Our model name is "Subscription" but in mongo DB it will become "subscriptions" (lowercase with plural)
+        localField: "_id",
+        foreignField: "subscriber", //here we select subscriber to find how many channels we subscribed
+        as: "subscribedTo",
+      },
+    },
+    //now we need to count our subscriber and channed subscribedTo
+    {
+      $addFields: {
+        subscribersCount: {
+          //how many subscribers we have
+          $size: "$subscribers", //count all the documents
+        },
+        channelsSubscribedToCount: {
+          // how many channels we subscribedTo
+          $size: "$subscribedTo", //count all the documents
+        },
+        //here I need to check in my subscribers documnet I was there or not If I was there means I also subscribed my channel
+        isSubscribed: {
+          $cond: {
+            if: { $in: [req.user?._id, "$subscribers.subscriber"] },
+            then: true,
+            else: false,
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        username: 1,
+        email: 1,
+        fullName: 1,
+        avatar: 1,
+        coverImage: 1,
+        subscribersCount: 1,
+        channelsSubscribedToCount: 1,
+        isSubscribed: 1,
+      },
+    },
+  ]);
+
+  if (!channel?.length) {
+    // Aagregation pipeline always return the value in "Array" so here we are checking length of array
+    throw new ApiError(400, "Channel not found");
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, channel[0], "Channel Profile Fetched Successfully")
+    );
+});
+
+const getWatchHistory = asyncHandler(async (req, res) => {
+  // (const user= req.user?._id;) //here we got the id in string but for us mongoose handle everything internally
+  //but in aggregation pipeline we need to convert it to object id via mongoose
+  const user = await User.aggregate([
+    //stage 1
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(req.user._id), //here we converted from mongoose because in pipeline its not working
+      },
+    },
+    //stage 2
+    {
+      $lookup: {
+        from: "videos", //our model name is "Video" so in mongodb it will become lowercase and plural "videos"
+        localField: "watchHistory",
+        foreignField: "_id",
+        as: "watchHistory", //watchHistory field
+        pipeline: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner", //onwer field
+              pipeline: [
+                {
+                  $project: {
+                    //we have all the fields in owner fields
+                    fullName: 1,
+                    username: 1,
+                    avatar: 1,
+                  },
+                },
+                {
+                  $addFields: {
+                    //here frontedn dev got the owner field with first value as owner details that we passed in project instead of array
+                    owner: {
+                      $first: "$owner",
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ]);
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        user[0].watchHistory,
+        "Watch History fetched successfully"
+      )
+    );
+});
 
 export {
   changeCurrentPassword,
   getCurrentUser,
+  getUserChannelProfile,
+  getWatchHistory,
   loginUser,
   logoutUser,
   refreshAccessToken,
