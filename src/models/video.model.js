@@ -47,5 +47,8 @@ const videoSchema = new Schema(
 );
 
 videoSchema.plugin(mongooseAggregatePaginate);
+//mongooseAggregatePaginate means we can't give all videos to user
+//so we should give paginate so it can load videos or we can show some videos on next pages
+//likewise we have comments also
 
 export const Video = mongoose.model("Video", videoSchema);
