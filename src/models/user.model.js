@@ -57,7 +57,7 @@ userSchema.pre("save", async function (next) {
   // we are using normal function here because we want acces to "this" keyword
   // next is a middleware
   if (!this.isModified("password")) return next();
-  this.password = bcrypt.hash(this.password, 10);
+  this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
@@ -71,9 +71,9 @@ userSchema.methods.generateAccessToken = function () {
   return jwt.sign(
     {
       _id: this._id,
-      // username: this.username,
-      // email: this.email,
-      // fullName: this.fullName,
+      username: this.username,
+      email: this.email,
+      fullName: this.fullName,
     },
     process.env.ACCESS_TOKEN_SECRET,
     {

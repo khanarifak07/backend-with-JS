@@ -13,8 +13,8 @@ const registerUser = asyncHandler(async (req, res) => {
   //check for image avatar
   //upload the image to cloudinary
   //create user object entity in database (.create)
-  //remove password and reference token fields
   //check for created user
+  //remove password and reference token fields
   //send the response
 
   //1
@@ -38,7 +38,9 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   //4
+  //a. first approach to check
   const avatarLocalPath = req.files?.avatar[0]?.path;
+  //b. second approach to check
   let coverImageLocalPath;
   if (
     req.files &&
@@ -55,7 +57,7 @@ const registerUser = asyncHandler(async (req, res) => {
   //6
   const user = await User.create({
     fullName,
-    username: username.toLowerCase(),
+    username,
     email,
     password,
     avatar: avatar.url,
@@ -121,7 +123,7 @@ const loginUser = asyncHandler(async (req, res) => {
   }
 
   //4
-  const isPasswordValidate = user.isPasswordCorrect(password);
+  const isPasswordValidate = await user.isPasswordCorrect(password);
   if (!isPasswordValidate) {
     throw new ApiError(401, "Invalid Credentials");
   }
@@ -253,21 +255,27 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 });
 
 const changeCurrentPassword = asyncHandler(async (req, res) => {
-  const { oldPassword, newPassword } = req.body; //or we can also take confrimPassword if required
-  /*  if(!(newPassword === cofirmPassword)){
-    throw new ApiError(400,"Password Mismatch")
-  } */
-  //here we don't have user id so we are going to take user id from req.user (auth middleware)
-  const user = await User.findById(req.user?._id);
-  //comparing old password (given password) with currrent password
-  const isPasswordMatch = await user.isPasswordCorrect(oldPassword);
-  if (!isPasswordMatch) {
-    throw new ApiError(400, "Invalid Old Password");
+  const { oldPassword, newPassword, confirmPassword } = req.body;
+  //compare new password with confirm password
+  if (!(newPassword == confirmPassword)) {
+    throw new ApiError(400, "Confirm Password Mismatch");
   }
-  //then we can set new password from user
+  //get the user
+  const user = await User.findById(req.user?._id);
+  if (!user) {
+    throw new ApiError(400, "User not found");
+  }
+  //compare old password
+  const isPasswordMatch = await user.isPasswordCorrect(oldPassword);
+  console.log("Old Password matched", isPasswordMatch);
+  if (!isPasswordMatch) {
+    throw new ApiError(401, "Invalid Old Password");
+  }
+  //then we can set new password from user  (req.user = user(auth middleware))
   user.password = newPassword;
-  //then we need to save to the database
-  await user.save({ validateBeforeSave: false }); // we don't need to validate all fileds
+  // Save the updated user to MongoDB
+  await user.save({ validateBeforeSave: false });
+
   //return response
   return res
     .status(200)

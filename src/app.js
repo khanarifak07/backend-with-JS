@@ -12,6 +12,20 @@ app.use(
     credentials: true,
   })
 );
+// Allow requests from a specific origin
+// app.use(cors({ origin: 'http://your-frontend-domain.com' }));
+
+// // Allow multiple origins
+// app.use(cors({ origin: ['http://frontend1.com', 'http://frontend2.com'] }));
+
+// Allow all origins, but restrict headers and methods
+/* app.use(cors({
+  origin: '*',
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
+  allowedHeaders: ['Content-Type', 'Authorization'],
+})); */
 
 //json configuration via express
 app.use(
