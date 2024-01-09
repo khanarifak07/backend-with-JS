@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   changeCurrentPassword,
+  getAllUsers,
   getCurrentUser,
   getUserChannelProfile,
   getWatchHistory,
@@ -9,6 +10,7 @@ import {
   refreshAccessToken,
   registerUser,
   updateAccountDetails,
+  updateAllAccountDetails,
   updateUserAvatar,
   updateUserCoverImage,
 } from "../controllers/user.controller.js";
@@ -33,12 +35,20 @@ router.route("/login").post(loginUser);
 router.route("/logout").post(verifyJWT, logoutUser);
 router.route("/refresh-token").post(refreshAccessToken);
 
-//while changing password always use upload.none()--from multer 
+//while changing password always use upload.none()--from multer
 router
   .route("/change-password")
   .post(verifyJWT, upload.none(), changeCurrentPassword);
 router.route("/current-user").get(verifyJWT, getCurrentUser);
-router.route("/update-account").patch(verifyJWT, updateAccountDetails);
+router.route("/update-account-details").patch(verifyJWT, updateAccountDetails);
+router.route("/update-all-account-details").patch(
+  verifyJWT,
+  upload.fields([
+    { name: "avatar", maxCount: 1 },
+    { name: "coverImage", maxCount: 1 },
+  ]),
+  updateAllAccountDetails
+);
 
 router
   .route("/avatar")
@@ -49,5 +59,6 @@ router
 
 router.route("/c/:username").get(verifyJWT, getUserChannelProfile); //here we are taking username in params (for params we user /c/:username)
 router.route("/watch-history").get(verifyJWT, getWatchHistory);
+router.route("/get-all-users").get(getAllUsers);
 
 export default router;

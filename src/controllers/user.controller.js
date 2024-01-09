@@ -289,9 +289,9 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 });
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
-  const { fullName, email } = req.body;
+  const { email, username, fullName } = req.body;
 
-  if (!(fullName || email)) {
+  if (!(fullName || email || username)) {
     throw new ApiError(400, "fullname and email is required");
   }
   //get user from req.user
@@ -299,8 +299,9 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     req.user?._id,
     {
       $set: {
-        fullName, // this is es6 syntax or we can also write as fullName: fullName,
+        username, // this is es6 syntax or we can also write as fullName: fullName,
         email,
+        fullName,
       },
     },
     {
@@ -317,6 +318,39 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     );
 });
 
+const updateAllAccountDetails = asyncHandler(async (req, res) => {
+  const { username, email, fullName } = req.body;
+  let updateFields = { username, email, fullName };
+
+  // Check if avatar file is provided
+  if (req.files?.avatar && req.files.avatar.length > 0) {
+    const avatarLocalPath = req.files.avatar[0].path;
+    const avatar = await UploadFileOnCloudinary(avatarLocalPath);
+    updateFields.avatar = avatar?.url || avatar;
+  }
+
+  // Check if cover image file is provided
+  if (req.files?.coverImage && req.files.coverImage.length > 0) {
+    const coverImageLocalPath = req.files.coverImage[0].path;
+    const coverImage = await UploadFileOnCloudinary(coverImageLocalPath);
+    updateFields.coverImage = coverImage?.url || coverImage;
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: updateFields,
+    },
+    {
+      new: true,
+    }
+  );
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, user, "Account Details Updated successfully"));
+});
+
 const updateUserAvatar = asyncHandler(async (req, res) => {
   const avatarLocalPath = req.file?.path; //req.file for single and req.files for multiple (from multer)
   if (!avatarLocalPath) {
@@ -324,8 +358,8 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
   }
 
   const avatar = await UploadFileOnCloudinary(avatarLocalPath);
-
-  if (!avatar.path) {
+  // console.log("Cloudinary response:", avatar.path);
+  if (!avatar.url) {
     throw new ApiError(400, "Error while uploading avatar image");
   }
 
@@ -363,7 +397,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     req.user?._id,
     {
       $set: {
-        coverImage: coverImage.path,
+        coverImage: coverImage.url,
       },
     },
     { new: true }
@@ -512,8 +546,21 @@ const getWatchHistory = asyncHandler(async (req, res) => {
     );
 });
 
+const getAllUsers = asyncHandler(async (req, res) => {
+  const users = await User.find();
+
+  if (!users) {
+    res.status(400).json(new ApiError(400, "Error while fetching all users"));
+  }
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, users, "All Users fetched successfully"));
+});
+
 export {
   changeCurrentPassword,
+  getAllUsers,
   getCurrentUser,
   getUserChannelProfile,
   getWatchHistory,
@@ -522,6 +569,7 @@ export {
   refreshAccessToken,
   registerUser,
   updateAccountDetails,
+  updateAllAccountDetails,
   updateUserAvatar,
   updateUserCoverImage,
 };
