@@ -35,7 +35,7 @@ router.route("/login").post(loginUser);
 router.route("/logout").post(verifyJWT, logoutUser);
 router.route("/refresh-token").post(refreshAccessToken);
 
-//while changing password always use upload.none()--from multer
+//while changing password we can use upload.none()--from multer
 router
   .route("/change-password")
   .post(verifyJWT, upload.none(), changeCurrentPassword);
