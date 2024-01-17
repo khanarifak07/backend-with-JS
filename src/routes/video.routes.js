@@ -28,7 +28,7 @@ router
             },
             
         ]),
-        publishAVideo
+        publishAVideo 
     );
 
 router
