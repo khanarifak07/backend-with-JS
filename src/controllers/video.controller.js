@@ -25,7 +25,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
   ) {
     localThumbnailPath = req.files?.thumbNail[0].path;
   } */
-  const videoFileLocalPath = req.files?.videoFile[0]?.path; //req.files for multiple file (from multer)
+  const videoFileLocalPath = req.files?.videoFile[0]?.path; //req.files for multiple file (from multer) & req.file.path (for single file)
   const thumbnailLocalPath = req.files?.thumbnail[0]?.path;
 
   //check for title and description
@@ -73,7 +73,8 @@ const getVideoById = asyncHandler(async (req, res) => {
   if (!userId) {
     throw new ApiErrorHandler(401, "Please login first");
   }
-  const video = await Video.find({ _id: videoId });
+  const video = await Video.findById(videoId); // OR const video = await Video.find({ _id: videoId });
+
   return res
     .status(200)
     .json(new ApiResponse(200, video, "video by Id fetched successfully"));
@@ -113,7 +114,7 @@ const updateVideo = asyncHandler(async (req, res) => {
 const deleteVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
 
-  const deletedVideo = await Video.findByIdAndDelete( videoId );
+  const deletedVideo = await Video.findByIdAndDelete(videoId);
 
   return res
     .status(200)
@@ -123,7 +124,35 @@ const deleteVideo = asyncHandler(async (req, res) => {
 });
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
+  //get videoId from params
+  //check if videoId exist
+  //fetch video from database using id
+  //toggle published true/false according to value in video
+  //return res
   const { videoId } = req.params;
+  if (!videoId) {
+    throw new ApiError(400, "VideoId not exist!!");
+  }
+  const video = await Video.findById(videoId);
+  if (!video) {
+    throw new ApiError(400, "video not available!!");
+  }
+  
+  if (video.isPublished) {
+    video.isPublished = false;
+  } else {
+    video.isPublished = true;
+  }
+
+  const updatedVideo = await video.save({ validateBeforeSave: false });
+
+  if (!updatedVideo) {
+    throw new ApiError(500, "Something went wrong while updating video!!");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, updatedVideo, "Video updated successfully."));
 });
 
 export {
