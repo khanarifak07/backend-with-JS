@@ -21,7 +21,7 @@ const playlist = new Schema(
       ref: "User",
     },
   },
-  { timestamps: true }
+  { timestamps: true, versionKey: false }
 );
 
-export const Playlist = mongoose.model("Playllist", playlist);
+export const Playlist = mongoose.model("Playlist", playlist);
