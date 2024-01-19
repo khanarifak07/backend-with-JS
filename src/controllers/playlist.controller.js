@@ -52,12 +52,63 @@ const getPlaylistById = asyncHandler(async (req, res) => {
 });
 
 const addVideoToPlaylist = asyncHandler(async (req, res) => {
+  //get playlist and video id from params
   const { playlistId, videoId } = req.params;
+  //check for playlist and video id
+  if (!playlistId) {
+    throw new ApiError(400, "playlistId not found!!");
+  }
+  if (!videoId) {
+    throw new ApiError(400, "videoId not found!!");
+  }
+  //get current playlist from playlist id
+  const playlist = await Playlist.findById(playlistId);
+  if (!playlist) {
+    throw new ApiError(400, "playlist not exist!!");
+  }
+  //push and video id to current playlist id
+  playlist.videos.addToSet(videoId); // Use addToSet to add videoId to the videos array, preventing duplicates
+  // playlist.videos.push(videoId);  // push is also used to add videoId to the videos array, not preventing duplicates
+  //save playlist
+  const updatedPlaylist = await playlist.save({ validateBeforeSave: false });
+  if (!updatedPlaylist) {
+    throw new ApiError(500, "Somethig went wrong while updating playlist");
+  }
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        updatedPlaylist,
+        "VideoId successsfully pushed to playlist"
+      )
+    );
 });
 
 const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
   const { playlistId, videoId } = req.params;
-  // TODO: remove video from playlist
+  if (!playlistId) {
+    throw new ApiError(400, "Playlist id not found");
+  }
+  if (!videoId) {
+    throw new ApiError(400, "Video id not found");
+  }
+  const playlist = await Playlist.findById(playlistId);
+  if (!playlist) {
+    throw new ApiError(400, "Playlist not found");
+  }
+  playlist.videos = playlist.videos.filter((item) => item._id != videoId);
+
+  const updatedPlaylist = await playlist.save({ validateBeforeSave: false });
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        updatedPlaylist,
+        "Video removed from playlist successfully"
+      )
+    );
 });
 
 const deletePlaylist = asyncHandler(async (req, res) => {
